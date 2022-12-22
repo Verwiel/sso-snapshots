@@ -34,9 +34,9 @@ export const Features: React.FC = () => {
   ];
 
   return (
-    <div className="auth0-features">
-      <h2 className="auth0-features__title">Explore Snapshot Features</h2>
-      <div className="auth0-features__grid">
+    <div className="features">
+      <h2 className="features__title">Explore Snapshot Features</h2>
+      <div className="features__grid">
         {featuresList.map((feature) => (
           <Feature
             key={feature.resourceUrl}
