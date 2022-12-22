@@ -1,24 +1,68 @@
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import nocache from "nocache";
+import * as dotenv from "dotenv";
+dotenv.config();
+import { messagesRouter } from "./routes/messages.routes";
+import { errorHandler } from "./middleware/error.middleware";
+import { notFoundHandler } from "./middleware/not-found.middleware";
+
+
+if (!(process.env.PORT && process.env.CLIENT_ORIGIN_URL)) {
+  throw new Error(
+    "Missing required environment variables. Check docs for more info."
+  );
+}
+
+const PORT = parseInt(process.env.PORT, 10);
+const CLIENT_ORIGIN_URL = process.env.CLIENT_ORIGIN_URL;
+
 const app = express();
-require('dotenv').config();
+const apiRouter = express.Router();
 
-const corsOptions = { origin: "http://localhost:8081" };
-app.use(cors(corsOptions));
-
-// parse requests of content-type - application/json
 app.use(express.json());
-// parse requests of content-type - application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true }));
+app.set("json spaces", 2);
 
-// const db = require("./server/models")
-// db.sequelize.sync()
+app.use(
+  helmet({
+    hsts: {
+      maxAge: 31536000,
+    },
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        "default-src": ["'none'"],
+        "frame-ancestors": ["'none'"],
+      },
+    },
+    frameguard: {
+      action: "deny",
+    },
+  })
+);
 
-// routes
-require('./routes/test.routes')(app);
+app.use((req, res, next) => {
+  res.contentType("application/json; charset=utf-8");
+  next();
+});
+app.use(nocache());
 
-// set port, listen for requests
-const PORT = process.env.PORT || 8080;
+app.use(
+  cors({
+    origin: CLIENT_ORIGIN_URL,
+    methods: ["GET"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+    maxAge: 86400,
+  })
+);
+
+app.use("/api", apiRouter);
+apiRouter.use("/messages", messagesRouter);
+
+app.use(errorHandler);
+app.use(notFoundHandler);
+
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}.`);
+  console.log(`Listening on port ${PORT}`);
 });
